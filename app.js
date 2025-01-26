@@ -1,6 +1,8 @@
 const app = require('fastify')({
     logger: true
 });
+const keep_alive = require('./keep_alive.js')
+
 const axios = require('axios');
 const telegramBot = require('node-telegram-bot-api');
 const bot = require('./controllers/insta');
@@ -17,5 +19,5 @@ const start = async () => {
         process.exit(1)
     }
 }
-keepAlive();
+
 start();
