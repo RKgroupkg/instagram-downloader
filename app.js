@@ -8,7 +8,6 @@ const telegramBot = require('node-telegram-bot-api');
 const bot = require('./controllers/insta');
 const insta = require('./controllers/bot');
 
-const keepAlive = require('./server');
 
 //run the server
 const start = async () => {
