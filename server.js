@@ -1,14 +1,7 @@
-const express = require('express');
-const server = express();
+var http = require('http');
 
-server.all(`/`, (req, res) => {
-    res.send(`Please connect me to a hosting website in-order to work 24/7.`);
-});
+http.createServer (function (req, res) {
+ res.write("I'm alive");
+ res.end();
 
-function keepAlive() {
-    server.listen(3000, () => {
-        console.log(`Creator: ItzNexus`);
-    });
-}
-
-module.exports = keepAlive;
+ }).listen(8080);
