@@ -5,8 +5,8 @@ const axios = require('axios');
 const telegramBot = require('node-telegram-bot-api');
 const bot = require('./controllers/insta');
 const insta = require('./controllers/bot');
-const keep_alive = require('./keep_alive.js')
 
+const keepAlive = require('./server');
 
 //run the server
 const start = async () => {
@@ -17,5 +17,5 @@ const start = async () => {
         process.exit(1)
     }
 }
-
-start()
+keepAlive();
+start();
