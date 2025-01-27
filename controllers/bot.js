@@ -8,6 +8,16 @@ const token = process.env.TELEGRAM_API;
 // Create a bot using polling
 const bot = new TelegramBot(token, { polling: true });
 
+const username = 'Instdlp_rkbot';
+const developer = 'RKGroup';
+
+const message = `Welcome to @${username}!
+
+Send me any Instagram link, and I’ll send it back as a media file! 
+
+Developed by ${developer}.`;
+
+console.log(message);
 // Centralized error handler
 const handleError = (chatId, error) => {
   console.error('Error:', error);
@@ -19,7 +29,7 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(
     chatId,
-    "Send me any Instagram link (except for stories) and I'll send it back to you as a media file. You can also use me in inline mode by typing @YourBotUsername followed by the Instagram link!"
+    message 
   );
 });
 
