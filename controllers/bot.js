@@ -116,45 +116,104 @@ bot.on('message', async (msg) => {
   }
 });
 
-// Enhanced inline query handler
 bot.on('inline_query', async (inlineQuery) => {
   const query = inlineQuery.query?.trim();
-  
-  if (!query) return;
+  const userId = inlineQuery.from.id;
 
   try {
-    const results = await instaScrapper(query);
-    
-    if (!results?.length) {
+    // Show loading status immediately
+    await bot.answerInlineQuery(inlineQuery.id, [], {
+      cache_time: 1,
+      button: {
+        text: "How to use?",
+        start_parameter: "inline_help"
+      }
+    });
+
+    // Empty query handling
+    if (!query) {
       return bot.answerInlineQuery(inlineQuery.id, [{
         type: 'article',
-        id: 'no_media',
-        title: '❌ No Media Found',
+        id: 'help',
+        title: '❓ How to Use',
+        description: 'Paste any Instagram post/reel link',
         input_message_content: {
-          message_text: 'Could not find any media in this post'
+          message_text: `Send Instagram links directly to @${username} or paste them here!\n\nExample: https://www.instagram.com/p/Cexample/`,
+          parse_mode: 'HTML'
         }
       }]);
     }
 
-    const formattedResults = results.map((media, index) => ({
+    // Validate URL format
+    const instaRegex = /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\/[\w-]+/i;
+    if (!instaRegex.test(query)) {
+      return bot.answerInlineQuery(inlineQuery.id, [{
+        type: 'article',
+        id: 'invalid_url',
+        title: '❌ Invalid URL',
+        description: 'Use format: instagram.com/p/... or instagram.com/reel/...',
+        input_message_content: {
+          message_text: `Invalid Instagram URL format. Please use:\n\n• Post: https://www.instagram.com/p/...\n• Reel: https://www.instagram.com/reel/...\n\nTry with @${username}!`,
+          parse_mode: 'HTML'
+        }
+      }]);
+    }
+
+    // Fetch media
+    const mediaItems = await instaScrapper(query);
+    
+    if (!mediaItems?.length) {
+      return bot.answerInlineQuery(inlineQuery.id, [{
+        type: 'article',
+        id: 'no_media',
+        title: '⚠️ No Media Found',
+        description: 'This post might be private or unavailable',
+        input_message_content: {
+          message_text: `Couldn't find any media in this post. Ensure:\n1. The account is public\n2. The link is correct\n3. Try again later`,
+          parse_mode: 'HTML'
+        }
+      }]);
+    }
+
+    // Format results with visual feedback
+    const results = mediaItems.map((media, index) => ({
       type: media.type === 'image' ? 'photo' : 'video',
-      id: `media_${index}_${Date.now()}`,
+      id: `media_${Date.now()}_${index}`,
       [media.type === 'image' ? 'photo_url' : 'video_url']: media.link,
-      thumb_url: media.link, // Use media URL as thumbnail
-      title: `Instagram ${media.type}`,
-      description: `High quality ${media.type}`,
-      caption: `📸 Via @${username}`,
-      parse_mode: 'Markdown'
+      thumb_url: media.link, // Use media as thumbnail
+      title: `${media.type === 'image' ? '📷 Photo' : '🎥 Video'} ${index + 1}/${mediaItems.length}`,
+      description: `Click to send ${media.type}`,
+      caption: `Downloaded via <a href="https://t.me/${username}">@${username}</a>`,
+      parse_mode: 'HTML'
     }));
 
-    await bot.answerInlineQuery(inlineQuery.id, formattedResults);
+    // Add help button as first result
+    results.unshift({
+      type: 'article',
+      id: 'help_top',
+      title: 'ℹ️ How to Use',
+      description: 'Send Instagram links directly to this bot!',
+      input_message_content: {
+        message_text: `Share Instagram links directly with @${username} for instant downloads!\n\nWorks with:\n• Posts\n• Reels\n• Carousels`,
+        parse_mode: 'HTML'
+      }
+    });
+
+    return bot.answerInlineQuery(inlineQuery.id, results, {
+      cache_time: 300,
+      is_personal: true
+    });
+
   } catch (error) {
-    await bot.answerInlineQuery(inlineQuery.id, [{
+    console.error('Inline error:', error);
+    return bot.answerInlineQuery(inlineQuery.id, [{
       type: 'article',
       id: 'error',
-      title: '❌ Download Failed',
+      title: '⚠️ Service Unavailable',
+      description: 'Try again in a few moments',
       input_message_content: {
-        message_text: `Error: ${error.message}`
+        message_text: `Temporary service interruption. Please try:\n1. Checking your link\n2. Waiting 1 minute\n3. Contacting @${developer}`,
+        parse_mode: 'HTML'
       }
     }]);
   }
