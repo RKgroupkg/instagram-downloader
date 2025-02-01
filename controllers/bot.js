@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const token = process.env.TELEGRAM_API;
 const bot = new TelegramBot(token, { polling: true });
-const username = '@Instdlp_rkbot';
+const username = 'Instdlp_rkbot';
 const developer = '@Rkgroup5316';
 
 const welcomeMessage = `🎉 *Welcome to @${username}!* 🎉
