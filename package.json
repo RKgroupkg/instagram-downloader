@@ -2,23 +2,23 @@
   "author": "Diego R. Mirhan",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.6.2", // Updated for better HTTP request handling
-    "dotenv": "^16.3.2", // Updated for environment variable management
-    "fastify": "^4.26.1", // Updated for lightweight web server functionality
-    "node-telegram-bot-api": "^0.61.0", // Latest stable version for Telegram bot API
-    "node-cache": "^5.2.1", // New: For in-memory caching of media files
-    "p-queue": "^7.3.0", // New: For managing concurrent requests
-    "limiter": "^2.1.0", // New: For rate limiting to prevent abuse
-    "winston": "^3.11.0" // New: For advanced logging and debugging
+    "axios": "^1.6.2", 
+    "dotenv": "^16.3.2", 
+    "fastify": "^4.26.1",
+    "node-telegram-bot-api": "^0.61.0",  
+    "node-cache": "^5.2.1", 
+    "p-queue": "^7.3.0", 
+    "limiter": "^2.1.0", 
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2", // Updated for auto-restart during development
-    "eslint": "^8.56.0", // New: For code linting and quality checks
-    "prettier": "^3.1.0" // New: For consistent code formatting
+    "nodemon": "^3.0.2",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.0"
   },
   "scripts": {
-    "start": "nodemon app.js", // Development start
-    "lint": "eslint .", // New: Lint the codebase
-    "format": "prettier --write ." // New: Format the code
+    "start": "nodemon app.js",
+    "lint": "eslint .", 
+    "format": "prettier --write ."
   }
 }
