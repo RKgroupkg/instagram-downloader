@@ -6,7 +6,7 @@ const token = process.env.TELEGRAM_API;
 const bot = new TelegramBot(token, { polling: true });
 
 const username = 'Instdlp_rkbot';
-const developer = 'RKGroup';
+const developer = 'rkgroup_5316';
 
 // Modified welcome message with HTML formatting
 const message = `<b>Welcome to @${username}!</b> 📸
