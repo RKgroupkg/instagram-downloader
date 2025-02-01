@@ -4,126 +4,155 @@ require('dotenv').config();
 
 const token = process.env.TELEGRAM_API;
 const bot = new TelegramBot(token, { polling: true });
-const username = 'Instdlp_rkbot';
-const developer = 'RKGroup';
+const username = '@Instdlp_rkbot';
+const developer = '@Rkgroup5316';
 
 const welcomeMessage = `🎉 *Welcome to @${username}!* 🎉
 
-📤 Send me any _Instagram Reel/Post link_ and I'll instantly download it for you!
+📤 Send any _Instagram Post/Reel link_ to download its media
 
 ✅ Features:
-- 𝗛𝗶𝗴𝗵-𝗤𝘂𝗮𝗹𝗶𝘁𝘆 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝘀
-- 𝗜𝗻𝗹𝗶𝗻𝗲 𝗠𝗼𝗱𝗲 𝗦𝘂𝗽𝗽𝗼𝗿𝘁
-- 𝗙𝗮𝘀𝘁 𝗣𝗿𝗼𝗰𝗲𝘀𝘀𝗶𝗻𝗴
+- Multiple Media Support
+- Instant Downloads
+- Carousel Posts
 
 📌 Example: \`https://www.instagram.com/p/Cexample/\`
 
 _Developed by ${developer}_`;
 
+// Enhanced error handler with media type detection
 const handleError = async (chatId, error, processingMsgId) => {
   console.error('Error:', error);
-  const errorMessages = {
-    ETIMEDOUT: '⌛ Request timed out. Please try again.',
-    'Invalid URL': '❌ Invalid Instagram URL. Please check the link format.',
-    'Private content': '🔒 This content is private and cannot be downloaded.',
-    default: '⚠️ Oops! Something went wrong. Please try again later.'
-  };
   
+  const errorMessages = {
+    'Invalid API response': '⚠️ Received invalid data from Instagram',
+    'No media found': '❌ No downloadable media found in this post',
+    'Invalid URL': '🔗 Invalid Instagram URL format',
+    default: '⚠️ Oops! Something went wrong. Please try again.'
+  };
+
   const message = errorMessages[error.message] || errorMessages.default;
-  await bot.sendMessage(chatId, message);
-  if (processingMsgId) {
-    await bot.deleteMessage(chatId, processingMsgId);
+  
+  try {
+    await bot.sendMessage(chatId, message);
+    if (processingMsgId) {
+      await bot.deleteMessage(chatId, processingMsgId);
+    }
+  } catch (e) {
+    console.error('Error cleanup failed:', e);
   }
 };
 
+// Start command with improved formatting
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, welcomeMessage, {
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: [
-        [{ text: '📢 Share Bot', url: `https://t.me/${username}` }],
-        [{ text: '🧩 Try Inline Mode', switch_inline_query: '' }]
+        [{ text: '🧩 Try Inline Mode', switch_inline_query: '' }],
+        [{ text: '📢 Share Bot', url: `https://t.me/${username}` }]
       ]
     }
   });
 });
 
-const processMessage = async (msg) => {
-  const chatId = msg.chat.id;
-  let processingMsg = null;
-
+// Processing function with URL validation
+const processMedia = async (chatId, url) => {
+  const processingMsg = await bot.sendMessage(chatId, '⏳ Processing your link...');
+  
   try {
-    // Send processing message and get its message ID
-    processingMsg = await bot.sendMessage(chatId, '⏳ Processing your link...');
+    // Validate URL format first
+    const instaRegex = /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\/[a-zA-Z0-9_-]+\/?/;
+    if (!instaRegex.test(url)) {
+      throw new Error('Invalid URL');
+    }
+
+    const result = await instaScrapper(url);
     
-    const post = await instaScrapper(msg.text);
-    if (!post?.length) throw new Error('No media found');
+    // Validate API response
+    if (!result?.length) {
+      throw new Error('No media found');
+    }
 
     // Delete processing message before sending media
     await bot.deleteMessage(chatId, processingMsg.message_id);
 
-    for (const media of post) {
-      const messageOptions = {
-        caption: `📸 Downloaded via @${username}`,
-        parse_mode: 'Markdown'
-      };
+    // Send media with parallel processing
+    await Promise.all(result.map(async (media, index) => {
+      try {
+        const options = {
+          caption: `📸 Media ${index + 1} via @${username}`,
+          parse_mode: 'Markdown'
+        };
 
-      if (media.type === 'image') {
-        await bot.sendPhoto(chatId, media.link, messageOptions);
-      } else {
-        await bot.sendVideo(chatId, media.link, { 
-          ...messageOptions,
-          supports_streaming: true
-        });
+        if (media.type === 'image') {
+          await bot.sendPhoto(chatId, media.link, options);
+        } else {
+          await bot.sendVideo(chatId, media.link, { 
+            ...options,
+            supports_streaming: true
+          });
+        }
+      } catch (mediaError) {
+        console.error(`Failed to send media ${index + 1}:`, mediaError);
       }
-    }
+    }));
+
   } catch (error) {
-    await handleError(chatId, error, processingMsg?.message_id);
+    await handleError(chatId, error, processingMsg.message_id);
   }
 };
 
+// Message handler
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  if (!msg.text || msg.text === '/start') return;
-
-  const instaRegex = /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\/[a-zA-Z0-9_-]+\/?/;
-  if (!instaRegex.test(msg.text)) {
-    return bot.sendMessage(chatId, '❌ Invalid Instagram URL format. Please use:\n\n• Post: https://www.instagram.com/p/...\n• Reel: https://www.instagram.com/reel/...');
+  const url = msg.text?.trim();
+  
+  if (url && !url.startsWith('/')) {
+    await processMedia(chatId, url);
   }
-
-  await processMessage(msg);
 });
 
+// Enhanced inline query handler
 bot.on('inline_query', async (inlineQuery) => {
   const query = inlineQuery.query?.trim();
+  
   if (!query) return;
 
   try {
-    const post = await instaScrapper(query);
-    if (!post?.length) throw new Error('No media found');
+    const results = await instaScrapper(query);
+    
+    if (!results?.length) {
+      return bot.answerInlineQuery(inlineQuery.id, [{
+        type: 'article',
+        id: 'no_media',
+        title: '❌ No Media Found',
+        input_message_content: {
+          message_text: 'Could not find any media in this post'
+        }
+      }]);
+    }
 
-    const results = post.map((media, index) => ({
+    const formattedResults = results.map((media, index) => ({
       type: media.type === 'image' ? 'photo' : 'video',
-      id: `${media.type}_${index}_${Date.now()}`,
+      id: `media_${index}_${Date.now()}`,
       [media.type === 'image' ? 'photo_url' : 'video_url']: media.link,
-      thumb_url: media.thumbnail || media.link,
-      title: `Instagram ${media.type === 'image' ? 'Photo' : 'Video'}`,
-      description: `High-quality ${media.type}`,
-      caption: `📸 Downloaded via @${username}`,
-      parse_mode: 'Markdown',
-      mime_type: media.type === 'video' ? 'video/mp4' : undefined
+      thumb_url: media.link, // Use media URL as thumbnail
+      title: `Instagram ${media.type}`,
+      description: `High quality ${media.type}`,
+      caption: `📸 Via @${username}`,
+      parse_mode: 'Markdown'
     }));
 
-    return bot.answerInlineQuery(inlineQuery.id, results);
+    await bot.answerInlineQuery(inlineQuery.id, formattedResults);
   } catch (error) {
-    console.error('Inline error:', error);
-    return bot.answerInlineQuery(inlineQuery.id, [{
+    await bot.answerInlineQuery(inlineQuery.id, [{
       type: 'article',
       id: 'error',
       title: '❌ Download Failed',
       input_message_content: {
-        message_text: `Failed to download content: ${error.message}`
+        message_text: `Error: ${error.message}`
       }
     }]);
   }
