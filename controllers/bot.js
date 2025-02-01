@@ -2,65 +2,81 @@ const TelegramBot = require('node-telegram-bot-api');
 const instaScrapper = require('./insta');
 require('dotenv').config();
 
-// Replace with your BotFather token
 const token = process.env.TELEGRAM_API;
-
-// Create a bot using polling
 const bot = new TelegramBot(token, { polling: true });
 
 const username = 'Instdlp_rkbot';
 const developer = 'RKGroup';
 
-const message = `Welcome to @${username}!
+// Modified welcome message with HTML formatting
+const message = `<b>Welcome to @${username}!</b> 📸
 
-Send me any Instagram link, and I’ll send it back as a media file! 
+Send me any Instagram link, and I'll send it back as media!
 
-Developed by ${developer}.`;
+<i>Developed by ${developer}</i>`;
 
-console.log(message);
-// Centralized error handler
-const handleError = (chatId, error) => {
-  console.error('Error:', error);
-  bot.sendMessage(chatId, 'Something went wrong! Please try again later.');
+const startMarkup = {
+  inline_keyboard: [
+    [
+      { text: 'How to Use 📖', callback_data: 'help' },
+      { text: 'Share Bot 📤', callback_data: 'share_bot' }
+    ],
+    [{ text: 'Use Inline Mode 🔍', switch_inline_query_current_chat: '' }]
+  ]
 };
 
-// Handle the /start command
+// Handle /start with inline buttons
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(
-    chatId,
-    message 
-  );
+  bot.sendChatAction(chatId, 'typing');
+  bot.sendMessage(chatId, message, {
+    parse_mode: 'HTML',
+    reply_markup: startMarkup
+  });
 });
 
-// Handle direct Instagram links in messages
+// Handle button callbacks
+bot.on('callback_query', (query) => {
+  const chatId = query.message.chat.id;
+  
+  switch(query.data) {
+    case 'share_bot':
+      bot.sendMessage(chatId, `Help others download Instagram content! Share me: https://t.me/${username}`);
+      break;
+    case 'help':
+      bot.sendMessage(chatId, "Just send any Instagram post/reel link or use inline mode with @${username}");
+      break;
+  }
+});
+
+// Modified message handler with auto-delete processing message
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
+  if (!msg.text || msg.text === '/start' || !msg.text.includes('instagram.com/')) return;
 
   try {
-    // Ensure msg.text exists before processing
-    if (msg.text && msg.text !== '/start' && msg.text.includes('https://www.instagram.com/')) {
-      bot.sendMessage(chatId, 'Processing your link, please wait...');
-      const post = await instaScrapper(msg.text);
+    const processingMsg = await bot.sendMessage(chatId, '⏳ Processing your request...');
+    const post = await instaScrapper(msg.text);
 
-      if (post && post.length > 0) {
-        post.forEach((media) => {
-          if (media.type === 'image') {
-            bot.sendPhoto(chatId, media.link);
-          } else if (media.type === 'video') {
-            bot.sendVideo(chatId, media.link);
-          } else {
-            bot.sendMessage(chatId, 'Unsupported media type.');
-          }
-        });
-      } else {
-        bot.sendMessage(chatId, 'No media found for this link.');
-      }
-    } else if (!msg.text) {
-      bot.sendMessage(chatId, 'Please send a valid Instagram link.');
+    // Delete processing message before sending results
+    await bot.deleteMessage(chatId, processingMsg.message_id);
+
+    if (!post?.length) {
+      // Add this before processing messages
+      bot.sendChatAction(chatId, 'typing');
+      return bot.sendMessage(chatId, '❌ No media found for this link');
+    }
+
+    for (const media of post) {
+      bot.sendChatAction(chatId, 'typing');
+      media.type === 'image' 
+        ? await bot.sendPhoto(chatId, media.link)
+        : await bot.sendVideo(chatId, media.link);
     }
   } catch (error) {
-    handleError(chatId, error);
+    console.error('Error:', error);
+    bot.sendChatAction(chatId, 'typing');
+    bot.sendMessage(chatId, '❌ Something went wrong! Please try again.');
   }
 });
 
