@@ -81,10 +81,12 @@ const processMedia = async (chatId, url) => {
     // Send media with parallel processing
     await Promise.all(result.map(async (media, index) => {
       try {
-        const options = {
-          caption: `📸 Media ${index + 1} via @${username}`,
-          parse_mode: 'Markdown'
-        };
+        // In your media sending code (both photo and video)
+           const options = {
+  caption: `📸 Media ${index + 1} via [@${username}](https://t.me/${username})`,
+  parse_mode: 'MarkdownV2',
+  disable_web_page_preview: true
+};
 
         if (media.type === 'image') {
           await bot.sendPhoto(chatId, media.link, options);
