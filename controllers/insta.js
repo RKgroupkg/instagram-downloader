@@ -13,34 +13,33 @@ const instaScrapper = async (url) => {
       'X-RapidAPI-Key': APIKey,
       'X-RapidAPI-Host': APIHost
     },
-    timeout: 10000 // 10-second timeout
+    timeout: 10000
   };
 
   try {
     const response = await axios.request(options);
     
-    // Validate API response structure
+    // Validate response structure
     if (!response.data?.data?.medias) {
       throw new Error('Invalid API response structure');
     }
 
-    // Process media URLs
+    // Process media for your specific API format
     return response.data.data.medias.map(media => ({
-      type: media.type === 'photo' ? 'image' : 'video',
-      link: media.url,
-      thumbnail: media.previewUrl
+      type: media.type === 'image' ? 'image' : 'video', // Match your API's "image" type
+      link: media.link // Your API uses "link" not "url"
     }));
 
   } catch (error) {
-    // Enhanced error handling
     let errorMessage = 'Failed to fetch content';
     
     if (error.response) {
-      // Handle API-specific errors
       errorMessage = error.response.data?.message || 
         `API Error: ${error.response.status}`;
     } else if (error.request) {
       errorMessage = 'No response from API server';
+    } else {
+      errorMessage = error.message;
     }
     
     throw new Error(errorMessage);
