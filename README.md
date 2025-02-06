@@ -51,3 +51,11 @@ Feel free to customize and extend this bot to fit your needs. Happy coding!
 This project is entirely my own creation, developed from scratch, leveraging various APIs to create a Telegram bot capable of fetching Instagram media content. It's a testament to my skills in full-stack development and showcases my proficiency in using technologies like Fastify, Nodemon, Axios, and dotenv to build efficient and user-friendly solutions.
 
 ---
+<p align="center">
+  <a href="https://t.me/Rkgroup_Bot">
+    <img src="https://img.shields.io/static/v1?label=Join&message=Telegram%20Channel&color=blueviolet&style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram Channel" />
+  </a>
+  <a href="https://telegram.me/Rkgroup_helpbot">
+    <img src="https://img.shields.io/static/v1?label=Join&message=Telegram%20Group&color=blueviolet&style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram Group" />
+  </a>
+</p>
